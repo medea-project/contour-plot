@@ -22,23 +22,26 @@ canvas {
   shape-rendering: crispEdges;
 }
 
+.axis path {
+  display: none;
+}
+
 </style>
 <body>
 <script src="http://d3js.org/d3.v2.min.js?2.9.6"></script>
 <script>
 
-var margin = {top: 10, right: 10, bottom: 20, left: 30},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.bottom - margin.top;
+var width = 960,
+    height = 500;
 
 d3.json("heatmap.json", function(heatmap) {
   var dx = heatmap[0].length,
       dy = heatmap.length;
 
   // Fix the aspect ratio.
-  var ka = dy / dx, kb = height / width;
-  if (ka < kb) height = width * ka;
-  else width = height / ka;
+  // var ka = dy / dx, kb = height / width;
+  // if (ka < kb) height = width * ka;
+  // else width = height / ka;
 
   var x = d3.scale.linear()
       .domain([0, dx])
@@ -54,52 +57,56 @@ d3.json("heatmap.json", function(heatmap) {
 
   var xAxis = d3.svg.axis()
       .scale(x)
-      .orient("bottom")
-      .tickSize(6, -height);
+      .orient("top")
+      .ticks(20);
 
   var yAxis = d3.svg.axis()
       .scale(y)
-      .orient("left")
-      .tickSize(6, -width);
+      .orient("right");
 
-  var canvas = d3.select("body").append("canvas")
+  d3.select("body").append("canvas")
       .attr("width", dx)
       .attr("height", dy)
-      .style("top", margin.top + "px")
-      .style("left", margin.left + "px")
       .style("width", width + "px")
-      .style("height", height + "px");
+      .style("height", height + "px")
+      .call(drawImage);
 
   var svg = d3.select("body").append("svg")
-      .attr("width", width + margin.left + margin.right)
-      .attr("height", height + margin.top + margin.bottom)
-    .append("g")
-      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+      .attr("width", width)
+      .attr("height", height);
 
   svg.append("g")
       .attr("class", "x axis")
       .attr("transform", "translate(0," + height + ")")
-      .call(xAxis);
+      .call(xAxis)
+      .call(removeZero);
 
   svg.append("g")
       .attr("class", "y axis")
-      .call(yAxis);
+      .call(yAxis)
+      .call(removeZero);
 
   // Compute the pixel colors; scaled by CSS.
-  var context = canvas.node().getContext("2d"),
-      image = context.createImageData(dx, dy);
+  function drawImage(canvas) {
+    var context = canvas.node().getContext("2d"),
+        image = context.createImageData(dx, dy);
 
-  for (var y = 0, p = -1; y < dy; ++y) {
-    for (var x = 0; x < dx; ++x) {
-      var c = d3.rgb(color(heatmap[y][x]));
-      image.data[++p] = c.r;
-      image.data[++p] = c.g;
-      image.data[++p] = c.b;
-      image.data[++p] = 255;
+    for (var y = 0, p = -1; y < dy; ++y) {
+      for (var x = 0; x < dx; ++x) {
+        var c = d3.rgb(color(heatmap[y][x]));
+        image.data[++p] = c.r;
+        image.data[++p] = c.g;
+        image.data[++p] = c.b;
+        image.data[++p] = 255;
+      }
     }
+
+    context.putImageData(image, 0, 0);
   }
 
-  context.putImageData(image, 0, 0);
+  function removeZero(axis) {
+    axis.selectAll("g").filter(function(d) { return !d; }).remove();
+  }
 });
 
 </script>
