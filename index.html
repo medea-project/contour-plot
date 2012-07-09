@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+body {
+  position: relative;
+}
+
+svg,
+canvas {
+  position: absolute;
+}
+
+.axis text {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+</style>
+<body>
+<script src="http://d3js.org/d3.v2.min.js?2.9.6"></script>
+<script>
+
+var margin = {top: 10, right: 10, bottom: 20, left: 30},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.bottom - margin.top;
+
+d3.json("heatmap.json", function(heatmap) {
+  var dx = heatmap[0].length,
+      dy = heatmap.length;
+
+  // Fix the aspect ratio.
+  var ka = dy / dx, kb = height / width;
+  if (ka < kb) height = width * ka;
+  else width = height / ka;
+
+  var x = d3.scale.linear()
+      .domain([0, dx])
+      .range([0, width]);
+
+  var y = d3.scale.linear()
+      .domain([0, dy])
+      .range([height, 0]);
+
+  var color = d3.scale.linear()
+      .domain([95, 115, 135, 155, 175, 195])
+      .range(["#0a0", "#6c0", "#ee0", "#eb4", "#eb9", "#fff"]);
+
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .tickSize(6, -height);
+
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left")
+      .tickSize(6, -width);
+
+  var canvas = d3.select("body").append("canvas")
+      .attr("width", dx)
+      .attr("height", dy)
+      .style("top", margin.top + "px")
+      .style("left", margin.left + "px")
+      .style("width", width + "px")
+      .style("height", height + "px");
+
+  var svg = d3.select("body").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
+    .append("g")
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .call(yAxis);
+
+  // Compute the pixel colors; scaled by CSS.
+  var context = canvas.node().getContext("2d"),
+      image = context.createImageData(dx, dy);
+
+  for (var y = 0, p = -1; y < dy; ++y) {
+    for (var x = 0; x < dx; ++x) {
+      var c = d3.rgb(color(heatmap[y][x]));
+      image.data[++p] = c.r;
+      image.data[++p] = c.g;
+      image.data[++p] = c.b;
+      image.data[++p] = 255;
+    }
+  }
+
+  context.putImageData(image, 0, 0);
+});
+
+</script>
