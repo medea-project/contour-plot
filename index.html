@@ -66,11 +66,7 @@ d3.json("readme-heatmap.json", function(heatmap) {
   svg.selectAll(".isoline")
       .data(color.domain().map(isoline))
     .enter().append("path")
-      .datum(function(d) {
-        var polygon = d3.geom.contour(d).map(function(p) { return [p[0] * width / dx, p[1] * height / dy]; });
-        polygon.push(polygon[0]);
-        return polygon;
-      })
+      .datum(function(d) { return d3.geom.contour(d).map(transform); })
       .attr("class", "isoline")
       .attr("d", function(d) { return "M" + d.join("L") + "Z"; })
       .style("fill", function(d, i) { return color.range()[i]; });
@@ -88,6 +84,10 @@ d3.json("readme-heatmap.json", function(heatmap) {
     return function(x, y) {
       return x >= 0 && y >= 0 && x < dx && y < dy && heatmap[y][x] >= min;
     };
+  }
+
+  function transform(point) {
+    return [point[0] * width / dx, point[1] * height / dy];
   }
 });
 
